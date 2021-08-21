@@ -1,0 +1,24 @@
+{
+  "name": "my_vue",
+  "version": "1.0.0",
+  "description": "源码中每个函数的执行图用AxGlyph绘制(浙大老师出版的一个超好用的绘图软件，要去某宝激活)，放置在README_agxs中，如果要查阅和自己修改的话，需要下载该软件再打开",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "webpack-dev-server --open --host 127.0.0.1 --port 80 --mode=development",
+    "build": "webpack --mode=production"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://gitee.com/wahaha_ad_calcium_milk/learn-vue-from-first-commit.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "html-webpack-plugin": "^5.3.2",
+    "ts-loader": "^9.2.5",
+    "typescript": "^4.3.5",
+    "webpack": "^5.51.1",
+    "webpack-cli": "^4.8.0",
+    "webpack-dev-server": "^4.0.0"
+  }
+}

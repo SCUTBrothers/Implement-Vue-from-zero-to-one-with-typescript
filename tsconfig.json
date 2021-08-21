@@ -1,0 +1,12 @@
+{
+  "include": [
+    "./src/*",
+    "src/directives/directives.js",
+    "src/directives/index.ts"
+  ],
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "es2015",
+    "target": "es2015"
+  }
+}
