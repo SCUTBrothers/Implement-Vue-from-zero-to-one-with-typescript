@@ -36,7 +36,7 @@ class Directive {
 
     this.arg = arg
 
-    this.key = expression
+    this.key = expression.trim()
   }
 
   static parse(attr: string, expression: string): null | Directive {
