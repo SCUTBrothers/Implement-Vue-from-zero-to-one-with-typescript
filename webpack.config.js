@@ -1,7 +1,7 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const path = require('path')
 const htmlPlugin = new HtmlWebpackPlugin({
-  template: './examples/nested_properties.html',
+  template: './dev.html',
   filename: 'index.html',
 })
 

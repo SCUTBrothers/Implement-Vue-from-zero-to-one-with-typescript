@@ -1,15 +1,16 @@
 import Directive from './directive'
 import Binding from './binding'
+import textParser from "./parse/textParser"
 
 class Vue {
   private _el: HTMLElement
   private _bindings: { [propName: string]: Binding }
   private _data: object
-  private _components: { [propName: string]: HTMLElement }
 
   scope: { [propName: string]: any }
 
   constructor(options: { el: string | HTMLElement; [propName: string]: any }) {
+
     if (typeof options.el === 'string') {
       this._el = document.querySelector(options.el) as HTMLElement
     } else if (typeof options.el === 'object') {
@@ -20,50 +21,25 @@ class Vue {
     this.scope = {}
 
     this._data = options.data || {}
-    this._components = options.components || {}
 
-    // 当采用嵌套属性时，需要在this._compileNode前将this._data的值拷贝到this.scope
-    // 并在this._bind中在给directive收集到binding的instances中后，触发一次directive的update
-    // 不这样做的话，则要嵌套遍历data和scope的属性
     for (let key in this._data) {
       this.scope[key] = this._data[key]
     }
 
-    this._compileNode(this._el, true)
+    this._compileNode(this._el)
   }
 
-  _compileNode(node: HTMLElement, root: boolean): void {
+  _compileNode(node: HTMLElement | Text): void {
     const nodeType: number = node.nodeType
-    const nodeName: string = node.nodeName
-    const nodeValue: string | void = node.nodeValue
-    const nodeAttrs: NamedNodeMap | void = node.attributes
 
     if (nodeType === 3) {
+
+      this._compileTextNode(node as Text)
       return
     } else if (nodeType === 1) {
-      if (!root) {
-        let isComponent: boolean
-        let component: HTMLElement | void
-        for (let key in this._components) {
-          if (key.toLowerCase() === nodeName.toLowerCase()) {
-            isComponent = true
-            component = this._components[key]
-          }
-        }
-        if (isComponent) {
-          const marker: Comment = document.createComment(
-            `this is the marker of component ${nodeName}`
-          )
 
-          const container: HTMLElement = node.parentNode as HTMLElement
+      const nodeAttrs: NamedNodeMap | void = (node as HTMLElement).attributes
 
-          container.insertBefore(marker, node)
-          if (component) {
-            container.insertBefore(component, marker)
-          }
-          container.removeChild(node)
-        }
-      }
       let attrs = [].map.call(nodeAttrs, (attr) => {
         return {
           name: attr.name,
@@ -78,36 +54,48 @@ class Vue {
 
       let children: NodeList = node.childNodes
       if (children.length) {
-        ;[].forEach.call(children, (child) => {
-          this._compileNode(child, false)
+        /**
+         *  拷贝前的children A: [textNode, elNode, textNode]
+         * 拷贝后的children B: [textNode, elNode, textNode]
+         * 由于在_compileTextNode中，会在遍历到的textNode之前插入解析后的多个文本节点，同时将该textNode删除
+         * 对于forEach来说，它遍历的范围在第一次调用callback的时候就确定，新加入A的数组元素不会被遍历到，而如果数组A中有元素被删除了，那么forEach遍历就会停止
+         * 这样就会导致第一个textNode后的所有节点不会被遍历到
+         * 这种情况确实会发生，因为NodeList A会由于其parentNode的删除旧的包含可能包含mustache语法的文本节点，会产生数组元素删除操作
+         * 
+         * 因此，我们需要对A的浅拷贝B进行遍历，这样浅拷贝B数组中的元素不会发生删除，而且数组元素还是引用到原有节点树上的节点元素, 仍然是对原有节点树上的节点元素进行遍历操作
+         */
+        ;[].forEach.call([].slice.call(children), (child) => {
+          this._compileNode(child)
         })
       }
     }
   }
 
-  _bind(node: HTMLElement, directive: Directive): void {
+  _compileTextNode(textNode: Text) {
+    let textTemplate = textNode.nodeValue
+    let tokens = textParser(textTemplate)
+    tokens.forEach((token) => {
+      let el: Text  = document.createTextNode("")
+      if (token.key) {
+        let directive: Directive = new Directive("text", token.key)
+        directive.el = el
+        this._bind(el, directive)
+      } else {
+        el.nodeValue = token.text
+      }
+      textNode.parentNode.insertBefore(el, textNode)
+    })
+
+    textNode.parentNode.removeChild(textNode)
+  }
+
+  _bind(node: HTMLElement | Text, directive: Directive): void {
     directive.el = node
 
     let key = directive.key
 
-    /**
-     *
-     * this._bindings[key]中的key仍然保留嵌套形式的字符串，如key = "a.b.c", 并不会做嵌套解除处理
-     * 相应地，this._bindings[key]指向的binding实例的binding.key也是保留嵌套形式的字符串
-     * binding.instances也是保存指向同一binding.key的多个directive实例
-     *
-     * 在this._createBinding(key)中，完成的任务是，对binding.key进行嵌套解析，按照嵌套路径去this.scope中一直向前走，如a.b.c，走到最后一层嵌套b的时候，
-     * 为该嵌套b对象的c属性设置响应式，Object.defineProperty，将binding.value留在c属性的getter中，
-     * binding.value = newVal和binding.instances.forEach((instance)=>instance.update(newVal))留在c属性的setter中
-     *
-     * 这样binding.key = "a.b.c"的binding实例就留在了this.scope[a][b][c]访问器属性的setter和getter闭包中，同时，在this._bindings["a.b.c"]中可以直接访问
-     * 该binding实例(与this.scope[a][b][c]闭包中的binding实例指针相同)
-     */
     let binding: Binding = this._bindings[key] || this._createBinding(key)
-
-    binding.instances.push(directive)
-
-    // if (directive.bind) directive.bind(binding.value)
+    binding.directives.push(directive)
 
     if (binding.value) directive.update(binding.value)
   }
@@ -118,20 +106,6 @@ class Vue {
     this._bindings[key] = binding
 
     return binding
-  }
-
-  static component(
-    name: string,
-    options: { template: string; [propName: string]: any }
-  ): HTMLElement {
-    let template: string = options.template
-
-    let el: HTMLElement = document.createElement('div')
-    el.innerHTML = template
-
-    new Vue({ el, data: options.data })
-
-    return el
   }
 }
 

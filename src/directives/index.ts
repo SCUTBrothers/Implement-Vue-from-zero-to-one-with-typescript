@@ -1,10 +1,13 @@
-import on from './on'
-import each from './for'
+import InsertText from "./text"
+import If from "./if"
+import On from "./on"
+import For from "./for"
+import Bind from "./bind"
 
 export default {
-  on,
-  for: each,
-  text(value: string | void) {
-    this.el.textContent = value || ''
-  },
+    text: InsertText,
+    if: If,
+    on: On,
+    for: For,
+    bind: Bind
 }

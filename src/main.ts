@@ -3,11 +3,8 @@ import Vue from './Vue'
 let app = new Vue({
   el: '#app',
   data: {
-    son: {
-      name: 'Nicholas',
-    },
-    dad: {
-      name: 'Jack',
-    },
-  },
+    name: "Nicholas",
+    msg: "Hello, Vue.js",
+    task: "coding"
+  }
 })

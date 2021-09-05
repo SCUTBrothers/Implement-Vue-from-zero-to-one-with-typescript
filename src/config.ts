@@ -1,2 +1,5 @@
-let prefix = 'v'
-export { prefix }
+const prefix: string = "v"
+
+export {
+    prefix
+}

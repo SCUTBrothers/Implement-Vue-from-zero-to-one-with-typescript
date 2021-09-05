@@ -2,19 +2,22 @@
 <html>
 
 <head>
-    <title>Nested Controllers</title>
+    <!-- 01 - ./examples/001-mustache.html  -->
+    <title>directive of text & {{ mustache }}</title>
 </head>
 
 <body>
     <div id="app">
         <div>
-            <myHeader></myHeader>
-            <p v-text="name"></p>
-            <p v-text="msg"></p>
-            <Dad></Dad>
+            Hello, {{ name }}. {{ msg }}
+            <div>
+                <p>
+                    Here is today's task: {{ task }}
+                </p>
+                Fighting!
+            </div>
         </div>
     </div>
-
 </body>
 
 </html>

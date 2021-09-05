@@ -1,77 +1,40 @@
-import directives from './directives/index'
 import { prefix } from './config'
-
-/**
- *
- * @param  {} directiveName,  something like "<key>[:<arg>]", eg., "on: click", "bind: class", "for", "if". Note, arg may contain spaces which should be trimmed
- * @param  {} expression, expression can be getted from attr.value originally, attr must has prefix, and be valid
- */
-
+import directives from "./directives/index"
 class Directive {
-  static readonly KEY_RE = /^[^:]+/
-  static readonly ARG_RE = /(?=:)([^:]+)$/
-
-  public el: HTMLElement
-  public arg: string
+  public el: HTMLElement | Text 
   public key: string
+  public updateDirective
 
-  private _update
-
-  constructor(directiveName: string, arg: string, expression: string) {
-    let directive: { update?: object; [propName: string]: object }
-    directive = directives[directiveName]
-
-    if (typeof directive === 'function') {
-      this._update = directive
-    } else {
-      for (let prop in directive) {
-        if (prop === 'update') {
-          // directive.update动态确定
-          this._update = directive.update
-          continue
-        }
-        this[prop] = directive[prop]
-      }
-    }
-
-    this.arg = arg
-
-    this.key = expression.trim()
+  constructor(directiveName: string, key: string) {
+    this.setUpdateDirective(directiveName)
+    this.key = key
   }
 
-  static parse(attr: string, expression: string): null | Directive {
+  setUpdateDirective(directiveName: string) {
+    this.updateDirective = new directives[directiveName]
+  }
+
+  update(value: unknown) {
+    this.updateDirective.update(this.el, value)
+  }
+
+  static parse(attr: string, value: string): null | Directive {
     if (attr.indexOf(prefix) === -1) return null
 
-    let noprefix: string
-    noprefix = attr.slice(prefix.length + 1)
+    const noprefix: string = attr.slice(prefix.length + 1)
 
-    let isMatchDirName: boolean
-    isMatchDirName = Directive.KEY_RE.test(noprefix)
-    if (!isMatchDirName)
-      console.warn(`directive name ${prefix}-${noprefix} is not valid`)
-    let isMatchArg: boolean
-    isMatchArg: Directive.ARG_RE.test(noprefix)
+    const isDirName: boolean = directives.hasOwnProperty(noprefix)
+    if (!isDirName) throw new Error(`directive name ${prefix}-${noprefix} is not valid`)
 
-    let directiveName: string | void
-    let directive: object | void
-    directiveName = isMatchDirName ? noprefix.match(Directive.KEY_RE)[0] : null
-    directive = directiveName ? directives[directiveName] : null
+    const directiveName: string | void = isDirName ? noprefix : null
 
-    let arg: string | void
-    arg = isMatchArg ? noprefix.match(Directive.ARG_RE)[0] : null
+    let valid: boolean = value.trim() ? true : false
 
-    let valid: boolean = expression ? true : false
+    if (!valid) throw new Error(`you must input a non-empty value of ${prefix}-${noprefix}`)
 
-    if (!directive) console.warn(`unknown directive: ${directiveName}`)
-    if (!valid) console.warn(`invalid directive expression: ${expression}`)
-
-    return directive && valid
-      ? new Directive(directiveName, arg, expression)
+    return directiveName && valid
+      ? new Directive(directiveName, value)
       : null
-  }
-
-  update(value: any): void {
-    this._update(value)
   }
 }
 

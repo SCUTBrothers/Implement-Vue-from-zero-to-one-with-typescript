@@ -4,7 +4,7 @@
   "description": "源码中每个函数的执行图用AxGlyph绘制(浙大老师出版的一个超好用的绘图软件，要去某宝激活)，放置在README_agxs中，如果要查阅和自己修改的话，需要下载该软件再打开",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "webpack-dev-server --open --host 127.0.0.1 --port 80 --mode=development",
+    "dev": "webpack-dev-server --open --host 127.0.0.1 --port 300 --mode=development",
     "build": "webpack --mode=production"
   },
   "repository": {

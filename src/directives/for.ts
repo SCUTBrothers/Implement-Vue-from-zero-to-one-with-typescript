@@ -1,4 +1,8 @@
-export default {
-  bind(): void {},
-  update(collection: any[]): void {},
+import Directives from "./directives"
+
+class For extends Directives {
+    update(el: HTMLElement) {
+    }
 }
+
+export default For

@@ -2,79 +2,46 @@ import Vue from './Vue'
 import Directive from './directive'
 
 class Binding {
+  _scope: object
   key: string
-  vue: Vue
   value: any
-  instances: Array<Directive>
+  directives: Array<Directive>
+  vue: Vue
 
-  constructor(key: string, vue: Vue) {
-    this.key = key
+  constructor(key: string, vue: Vue ) {
+    this._scope = vue.scope
     this.vue = vue
-    this.instances = []
+    this.key = key
+    this.directives = []
 
-    let path = parsePath(key)
+    this.value = this.getValue(key)
 
-    this.value = getValue(vue.scope, path)
-
-    this.defineReactive(vue.scope, path)
+    this.defineReactive(key)
   }
 
-  defineReactive(scope: object, path: Array<string>) {
-    if (path.length === 0) return
-
-    let key: string = path[0]
-
-    let binding = this
-
-    if (path.length === 1) {
-      Object.defineProperty(scope, key, {
-        set(newVal) {
-          if (newVal === this.value) return
-          binding.value = newVal
-          binding.instances.forEach((instance) => {
-            instance.update(newVal)
-          })
-        },
-        get() {
-          return binding.value
-        },
-      })
-    } else {
-      let subScope = scope[key]
-
-      Object.defineProperty(scope, key, {
-        set(newVal) {
-          // a.b = {...}
-          scope[key] = subScope
-        },
-        get() {
-          return subScope
-        },
-      })
-
-      this.defineReactive(subScope, path.slice(1))
-    }
-  }
-}
-
-function getValue(scope: object, keys: Array<string>): any {
-  if (keys.length === 0) return scope
-
-  let keysCopy = keys.slice(0)
-
-  let key: string = keysCopy.shift()
-  let res: any = scope[key]
-
-  // when keys = [], keys.shift() return undefined
-  while ((key = keysCopy.shift())) {
-    res = res[key]
+  defineReactive(key: string) {
+    Object.defineProperty(this._scope, key, {
+      get() {
+        return this.value
+      },
+      set(newVal: any) {
+        if (newVal === this.value) return
+        this.directives.forEach((directive) => {
+          directive.update(newVal)
+        })
+      }
+    })
   }
 
-  return res
+getValue(key: string): any {
+
+  let value = this._scope[key] || null
+
+  return value
 }
 
-function parsePath(rawPath: string): Array<string> {
-  return rawPath.trim().split('.')
 }
+
+
 
 export default Binding

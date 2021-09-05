@@ -2,7 +2,8 @@
   "include": [
     "./src/*",
     "src/directives/directives.js",
-    "src/directives/index.ts"
+    "src/directives/index.ts",
+    "src/directives/directives.ts"
   ],
   "compilerOptions": {
     "outDir": "./dist",
